@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Managed Escalation Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:         #0f1923;
+    --surface:    #1a2535;
+    --surface2:   #243045;
+    --border:     #2d3f55;
+    --text:       #e8edf3;
+    --muted:      #7a8fa8;
+    --accent:     #3b82f6;
+    --green:      #22c55e;
+    --red:        #ef4444;
+    --yellow:     #f59e0b;
+    --purple:     #a855f7;
+    --teal:       #14b8a6;
+    --navy-dark:  #1e3a5f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif;
+         font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  /* ── Header ── */
+  header { background: var(--surface); border-bottom: 1px solid var(--border);
+           padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+           position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+  header h1 span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  #last-updated { font-size: 12px; color: var(--muted); }
+  #refresh-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px;
+                 padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 500;
+                 transition: opacity .15s; }
+  #refresh-btn:hover { opacity: .85; }
+  #refresh-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ── Layout ── */
+  main { max-width: 1600px; margin: 0 auto; padding: 20px 24px; }
+
+  /* ── KPI Cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+              gap: 14px; margin-bottom: 24px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border);
+              border-radius: 10px; padding: 16px; }
+  .kpi-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+                     color: var(--muted); margin-bottom: 6px; }
+  .kpi-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .kpi-card .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .kpi-card.green .value { color: var(--green); }
+  .kpi-card.red   .value { color: var(--red); }
+  .kpi-card.blue  .value { color: var(--accent); }
+  .kpi-card.yellow .value { color: var(--yellow); }
+  .kpi-card.purple .value { color: var(--purple); }
+  .kpi-card.teal  .value { color: var(--teal); }
+
+  /* ── Chart row ── */
+  .chart-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border);
+                border-radius: 10px; padding: 20px; }
+  .chart-card h3 { font-size: 13px; font-weight: 600; color: var(--muted);
+                   text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px; }
+  .chart-card canvas { max-height: 220px; }
+
+  /* ── Filters ── */
+  .filter-bar { background: var(--surface); border: 1px solid var(--border);
+                border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+                display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .filter-bar label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .filter-bar select, .filter-bar input[type=text] {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 10px; font-size: 13px; outline: none; }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent); }
+  .filter-bar input[type=text] { min-width: 200px; }
+  #filter-count { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #clear-filters { background: transparent; border: 1px solid var(--border); color: var(--muted);
+                   border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+  #clear-filters:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Table ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border);
+                border-radius: 10px; overflow: hidden; }
+  .table-header-row { display: flex; align-items: center; justify-content: space-between;
+                      padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .table-header-row h3 { font-size: 14px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: var(--surface2); color: var(--muted); font-weight: 600;
+             font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+             padding: 10px 12px; text-align: left; cursor: pointer; white-space: nowrap;
+             border-bottom: 1px solid var(--border); user-select: none; }
+  thead th:hover { color: var(--text); }
+  thead th .sort-icon { margin-left: 4px; opacity: .4; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 12px; vertical-align: middle; }
+  td.merchant { font-weight: 600; max-width: 160px; overflow: hidden;
+                text-overflow: ellipsis; white-space: nowrap; }
+  td.context-col { max-width: 260px; overflow: hidden; text-overflow: ellipsis;
+                   white-space: nowrap; color: var(--muted); font-size: 12px; }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+           font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-green  { background: rgba(34,197,94,.15);  color: var(--green); }
+  .badge-red    { background: rgba(239,68,68,.15);   color: var(--red); }
+  .badge-yellow { background: rgba(245,158,11,.15);  color: var(--yellow); }
+  .badge-blue   { background: rgba(59,130,246,.15);  color: var(--accent); }
+  .badge-purple { background: rgba(168,85,247,.15);  color: var(--purple); }
+  .badge-muted  { background: rgba(122,143,168,.1);  color: var(--muted); }
+  .badge-teal   { background: rgba(20,184,166,.15);  color: var(--teal); }
+
+  /* ── Pagination ── */
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 8px;
+                padding: 14px; border-top: 1px solid var(--border); }
+  .pagination button { background: var(--surface2); border: 1px solid var(--border);
+                       color: var(--text); border-radius: 6px; padding: 5px 12px;
+                       cursor: pointer; font-size: 12px; }
+  .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pagination button:disabled { opacity: .4; cursor: not-allowed; }
+  .pagination .page-info { font-size: 12px; color: var(--muted); min-width: 100px; text-align: center; }
+
+  /* ── Loading / Error ── */
+  #loading { display: flex; align-items: center; justify-content: center;
+             min-height: 60vh; flex-direction: column; gap: 12px; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border);
+             border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #error-banner { background: rgba(239,68,68,.1); border: 1px solid var(--red);
+                  border-radius: 8px; padding: 16px; margin-bottom: 20px; color: var(--red); display: none; }
+
+  /* ── SLA split card ── */
+  .sla-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .sla-split-item .lbl { font-size: 11px; color: var(--muted); }
+  .sla-split-item .val { font-size: 20px; font-weight: 700; }
+
+  @media (max-width: 900px) {
+    .chart-row { grid-template-columns: 1fr; }
+    .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Managed Escalation <span>Tracker</span></h1>
+  <div class="header-right">
+    <span id="last-updated">Loading…</span>
+    <button id="refresh-btn" onclick="loadData()">Refresh</button>
+  </div>
+</header>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <span style="color:var(--muted)">Loading escalation data…</span>
+</div>
+
+<main id="app" style="display:none">
+  <div id="error-banner"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Charts -->
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Monthly Escalations</h3>
+      <canvas id="chart-monthly"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>SLA Status</h3>
+      <canvas id="chart-sla"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Escalation Type</h3>
+      <canvas id="chart-type"></canvas>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <label>Month</label>
+    <select id="f-month"><option value="">All</option></select>
+    <label>Type</label>
+    <select id="f-type">
+      <option value="">All</option>
+      <option>AM Escalation</option>
+      <option>Leadership Escalation</option>
+    </select>
+    <label>Status</label>
+    <select id="f-status">
+      <option value="">All</option>
+      <option>Open</option>
+      <option>Investigating</option>
+      <option>Waiting on Internal Team</option>
+      <option>Waiting on Merchant</option>
+      <option>Monitoring</option>
+      <option>Resolved</option>
+    </select>
+    <label>SLA</label>
+    <select id="f-sla">
+      <option value="">All</option>
+      <option value="NO">Within SLA</option>
+      <option value="YES">Breached</option>
+      <option value="Open">Open (Unresolved)</option>
+    </select>
+    <input type="text" id="f-search" placeholder="Search merchant, manager, context…">
+    <span id="filter-count"></span>
+    <button id="clear-filters" onclick="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-header-row">
+      <h3>Escalation Threads</h3>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="main-table">
+        <thead id="table-head"></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <button id="btn-prev" onclick="changePage(-1)">← Prev</button>
+      <span class="page-info" id="page-info"></span>
+      <button id="btn-next" onclick="changePage(1)">Next →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let allThreads = [], filteredThreads = [];
+let sortCol = 'created_ist', sortDir = -1;
+let currentPage = 1;
+const PAGE_SIZE = 25;
+let charts = {};
+let autoRefreshTimer = null;
+
+// ── Load ───────────────────────────────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  try {
+    const res = await fetch('./data.json?_=' + Date.now());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    render(data);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('error-banner').style.display = 'none';
+
+    // Schedule auto-refresh every 5 minutes
+    clearTimeout(autoRefreshTimer);
+    autoRefreshTimer = setTimeout(loadData, 5 * 60 * 1000);
+
+    updateLastUpdated(data.meta.generated_at_ist);
+  } catch (e) {
+    const eb = document.getElementById('error-banner');
+    eb.textContent = `Failed to load data: ${e.message}. Will retry in 60s.`;
+    eb.style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    clearTimeout(autoRefreshTimer);
+    autoRefreshTimer = setTimeout(loadData, 60 * 1000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Refresh';
+  }
+}
+
+function updateLastUpdated(istStr) {
+  const el = document.getElementById('last-updated');
+  if (!istStr) { el.textContent = ''; return; }
+  const genDate = new Date(istStr.replace(' ', 'T') + '+05:30');
+  const diffMin = Math.round((Date.now() - genDate) / 60000);
+  const label = diffMin < 2 ? 'just now' :
+                diffMin < 60 ? `${diffMin}m ago` :
+                `${Math.floor(diffMin/60)}h ${diffMin%60}m ago`;
+  el.textContent = `Last synced ${label} · auto-refreshes every 5m`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(data) {
+  allThreads = data.threads || [];
+  renderKPIs(data.kpis);
+  renderCharts(data.by_month, data.kpis);
+  populateMonthFilter(data.by_month);
+  applyFilters();
+}
+
+// ── KPI Cards ─────────────────────────────────────────────────────────────────
+function renderKPIs(k) {
+  const slaLabel = k.sla_pct !== null ? `${k.sla_pct}%` : 'N/A';
+  const lSla = k.leadership_total > 0
+    ? Math.round(k.leadership_within / k.leadership_total * 100) + '%' : 'N/A';
+  const aSla = k.am_total > 0
+    ? Math.round(k.am_within / k.am_total * 100) + '%' : 'N/A';
+
+  const cards = [
+    { label: 'Total Escalations', value: k.total, sub: 'all time', cls: 'blue' },
+    { label: 'Open',              value: k.open,  sub: 'unresolved', cls: 'yellow' },
+    { label: 'Resolved',          value: k.resolved, sub: 'closed out', cls: 'green' },
+    { label: 'SLA Adherence',     value: slaLabel, sub: `${k.sla_breached} breached`, cls: k.sla_pct >= 70 ? 'green' : 'red' },
+    { label: 'Leadership',        value: k.leadership_total, sub: `${lSla} within SLA`, cls: 'purple' },
+    { label: 'AM Escalations',    value: k.am_total, sub: `${aSla} within SLA`, cls: 'teal' },
+    { label: 'IM Involved',       value: k.im_involved, sub: 'incident mgmt', cls: 'red' },
+    { label: 'Avg TTR',           value: k.avg_ttr_hours !== null ? k.avg_ttr_hours + 'h' : '—',
+                                   sub: 'business hours', cls: '' },
+    { label: 'Mx Confirm Pending', value: k.mx_confirm_pending, sub: 'awaiting ack', cls: 'yellow' },
+  ];
+  document.getElementById('kpi-grid').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+function renderCharts(byMonth, kpis) {
+  // Monthly bar chart
+  const months = Object.keys(byMonth).sort((a, b) => {
+    const d = m => new Date('1 ' + m);
+    return d(a) - d(b);
+  });
+  const totals    = months.map(m => byMonth[m].total);
+  const resolved  = months.map(m => byMonth[m].resolved);
+  const breached  = months.map(m => byMonth[m].breached);
+
+  destroyChart('monthly');
+  const ctx1 = document.getElementById('chart-monthly').getContext('2d');
+  charts.monthly = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Total',    data: totals,   backgroundColor: 'rgba(59,130,246,.6)',  borderRadius: 4 },
+        { label: 'Resolved', data: resolved, backgroundColor: 'rgba(34,197,94,.6)',   borderRadius: 4 },
+        { label: 'Breached', data: breached, backgroundColor: 'rgba(239,68,68,.6)',   borderRadius: 4 },
+      ]
+    },
+    options: chartOptions({ legend: true }),
+  });
+
+  // SLA donut
+  destroyChart('sla');
+  const ctx2 = document.getElementById('chart-sla').getContext('2d');
+  charts.sla = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ['Within SLA', 'Breached', 'Open'],
+      datasets: [{ data: [kpis.sla_within, kpis.sla_breached, kpis.sla_open],
+                   backgroundColor: ['rgba(34,197,94,.8)', 'rgba(239,68,68,.8)', 'rgba(245,158,11,.8)'],
+                   borderWidth: 0 }]
+    },
+    options: { ...chartOptions({}), cutout: '65%' },
+  });
+
+  // Escalation type donut
+  destroyChart('type');
+  const ctx3 = document.getElementById('chart-type').getContext('2d');
+  charts.type = new Chart(ctx3, {
+    type: 'doughnut',
+    data: {
+      labels: ['AM Escalation', 'Leadership'],
+      datasets: [{ data: [kpis.am_total, kpis.leadership_total],
+                   backgroundColor: ['rgba(20,184,166,.8)', 'rgba(168,85,247,.8)'],
+                   borderWidth: 0 }]
+    },
+    options: { ...chartOptions({}), cutout: '65%' },
+  });
+}
+
+function destroyChart(name) {
+  if (charts[name]) { charts[name].destroy(); delete charts[name]; }
+}
+
+function chartOptions({ legend = false } = {}) {
+  return {
+    responsive: true,
+    plugins: {
+      legend: { display: legend, labels: { color: '#7a8fa8', font: { size: 11 } } },
+    },
+    scales: legend ? {
+      x: { ticks: { color: '#7a8fa8', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+      y: { ticks: { color: '#7a8fa8', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+    } : undefined,
+  };
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function populateMonthFilter(byMonth) {
+  const sel = document.getElementById('f-month');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All</option>';
+  Object.keys(byMonth).sort().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = m;
+    if (m === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+['f-month', 'f-type', 'f-status', 'f-sla'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => { currentPage = 1; applyFilters(); });
+});
+document.getElementById('f-search').addEventListener('input', () => { currentPage = 1; applyFilters(); });
+
+function applyFilters() {
+  const month  = document.getElementById('f-month').value;
+  const type   = document.getElementById('f-type').value;
+  const status = document.getElementById('f-status').value;
+  const sla    = document.getElementById('f-sla').value;
+  const search = document.getElementById('f-search').value.toLowerCase();
+
+  filteredThreads = allThreads.filter(t => {
+    if (month  && t.esc_month        !== month)  return false;
+    if (type   && t.esc_type         !== type)   return false;
+    if (status && t.status           !== status) return false;
+    if (sla    && t.sla_breach       !== sla)    return false;
+    if (search) {
+      const hay = [t.merchant_name, t.esc_manager, t.who_raised, t.context,
+                   t.status, t.esc_type].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  filteredThreads.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (va == null) va = '';
+    if (vb == null) vb = '';
+    if (typeof va === 'number' && typeof vb === 'number') return sortDir * (va - vb);
+    return sortDir * String(va).localeCompare(String(vb));
+  });
+
+  document.getElementById('filter-count').textContent =
+    `${filteredThreads.length} of ${allThreads.length} threads`;
+  renderTable();
+}
+
+function clearFilters() {
+  ['f-month', 'f-type', 'f-status', 'f-sla'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-search').value = '';
+  currentPage = 1;
+  applyFilters();
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+const COLS = [
+  { key: 'created_ist',      label: 'Created',        width: '130px' },
+  { key: 'merchant_name',    label: 'Merchant',        width: '150px' },
+  { key: 'who_raised',       label: 'Who Raised',      width: '130px' },
+  { key: 'esc_manager',      label: 'Esc. Manager',    width: '130px' },
+  { key: 'esc_type',         label: 'Type',            width: '140px' },
+  { key: 'context',          label: 'Context',         width: '260px' },
+  { key: 'status',           label: 'Status',          width: '160px' },
+  { key: 'resolution_status',label: 'Resolution',      width: '90px'  },
+  { key: 'ttr_hours',        label: 'TTR (BH)',        width: '80px'  },
+  { key: 'sla_breach',       label: 'SLA',             width: '80px'  },
+  { key: 'im_involved',      label: 'IM',              width: '50px'  },
+  { key: 'mx_confirmed',     label: 'Mx Ack',          width: '65px'  },
+  { key: 'open_days',        label: 'Days',            width: '50px'  },
+  { key: 'thread_url',       label: 'Link',            width: '50px'  },
+];
+
+function buildTableHead() {
+  document.getElementById('table-head').innerHTML = '<tr>' +
+    COLS.map(c => `
+      <th style="min-width:${c.width}" onclick="setSort('${c.key}')" class="${sortCol===c.key?'sorted':''}">
+        ${c.label} <span class="sort-icon">${sortCol===c.key ? (sortDir===1?'↑':'↓') : '↕'}</span>
+      </th>`).join('') + '</tr>';
+}
+
+function setSort(col) {
+  sortDir = sortCol === col ? -sortDir : -1;
+  sortCol = col;
+  currentPage = 1;
+  applyFilters();
+}
+
+function renderTable() {
+  buildTableHead();
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filteredThreads.slice(start, start + PAGE_SIZE);
+  const total = filteredThreads.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  document.getElementById('page-info').textContent =
+    `Page ${currentPage} of ${pages} (${total} rows)`;
+  document.getElementById('btn-prev').disabled = currentPage <= 1;
+  document.getElementById('btn-next').disabled = currentPage >= pages;
+
+  document.getElementById('table-body').innerHTML = page.map(t => `
+    <tr>
+      <td>${t.created_ist ? t.created_ist.slice(0,16) : ''}</td>
+      <td class="merchant" title="${esc(t.merchant_name)}">${esc(t.merchant_name)}</td>
+      <td>${esc(t.who_raised)}</td>
+      <td>${esc(t.esc_manager)}</td>
+      <td>${typeBadge(t.esc_type)}</td>
+      <td class="context-col" title="${esc(t.context)}">${esc(t.context)}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td>${resBadge(t.resolution_status)}</td>
+      <td>${t.ttr_hours !== null && t.ttr_hours !== '' ? t.ttr_hours + 'h' : '—'}</td>
+      <td>${slaBadge(t.sla_breach)}</td>
+      <td>${yesNoBadge(t.im_involved)}</td>
+      <td>${yesNoBadge(t.mx_confirmed)}</td>
+      <td>${t.open_days || '—'}</td>
+      <td>${t.thread_url ? `<a href="${t.thread_url}" target="_blank">↗</a>` : '—'}</td>
+    </tr>`).join('');
+}
+
+function changePage(delta) {
+  const pages = Math.ceil(filteredThreads.length / PAGE_SIZE);
+  currentPage = Math.max(1, Math.min(pages, currentPage + delta));
+  renderTable();
+  document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Badge helpers ─────────────────────────────────────────────────────────────
+const esc = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function slaBadge(v) {
+  if (v === 'YES')  return '<span class="badge badge-red">Breached</span>';
+  if (v === 'NO')   return '<span class="badge badge-green">Within</span>';
+  return '<span class="badge badge-yellow">Open</span>';
+}
+
+function statusBadge(v) {
+  const map = {
+    'Resolved':               'badge-green',
+    'Monitoring':             'badge-teal',
+    'Investigating':          'badge-blue',
+    'Waiting on Internal Team':'badge-yellow',
+    'Waiting on Merchant':    'badge-yellow',
+    'Open':                   'badge-muted',
+  };
+  return `<span class="badge ${map[v]||'badge-muted'}">${esc(v||'Open')}</span>`;
+}
+
+function resBadge(v) {
+  return v === 'Resolved'
+    ? '<span class="badge badge-green">Resolved</span>'
+    : '<span class="badge badge-muted">Unresolved</span>';
+}
+
+function typeBadge(v) {
+  return v === 'Leadership Escalation'
+    ? '<span class="badge badge-purple">Leadership</span>'
+    : '<span class="badge badge-teal">AM</span>';
+}
+
+function yesNoBadge(v) {
+  return v === 'YES'
+    ? '<span class="badge badge-green">YES</span>'
+    : '<span class="badge badge-muted">NO</span>';
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>

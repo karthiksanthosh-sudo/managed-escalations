@@ -1,0 +1,55 @@
+name: Sync Escalation Data
+
+on:
+  schedule:
+    - cron: '0 * * * *'       # every hour
+  workflow_dispatch:           # manual trigger from GitHub UI
+    inputs:
+      full_backfill:
+        description: 'Set to "true" to force a 365-day backfill (ignores existing data.json)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write              # needed to commit data.json back to repo
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Force full backfill (if requested)
+        if: ${{ github.event.inputs.full_backfill == 'true' }}
+        run: rm -f data.json
+
+      - name: Run sync
+        env:
+          SLACK_BOT_TOKEN:              ${{ secrets.SLACK_BOT_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON:  ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
+          LEADERSHIP_SLACK_USER_IDS:    ${{ secrets.LEADERSHIP_SLACK_USER_IDS }}
+        run: python sync.py
+
+      - name: Commit and push data.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          # Only commit if data.json actually changed
+          if git diff --cached --quiet; then
+            echo "No changes to data.json — skipping commit."
+          else
+            git commit -m "chore: sync escalation data $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
