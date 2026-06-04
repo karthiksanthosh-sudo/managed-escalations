@@ -1,33 +1,33 @@
 {
   "meta": {
-    "generated_at_ist": "2026-06-04 14:24:25",
-    "generated_at_unix": 1780563265,
-    "total_threads": 159,
+    "generated_at_ist": "2026-06-04 17:36:05",
+    "generated_at_unix": 1780574765,
+    "total_threads": 160,
     "channel_id": "C0A8GNBCPRR"
   },
   "kpis": {
-    "total": 159,
-    "open": 61,
+    "total": 160,
+    "open": 62,
     "resolved": 98,
     "sla_within": 29,
     "sla_breached": 69,
-    "sla_open": 61,
+    "sla_open": 62,
     "sla_pct": 29.6,
     "leadership_total": 20,
     "leadership_within": 4,
-    "am_total": 139,
+    "am_total": 140,
     "am_within": 25,
     "im_involved": 21,
     "avg_ttr_hours": 93.16,
-    "mx_confirm_pending": 61
+    "mx_confirm_pending": 62
   },
   "by_month": {
     "Jun-2026": {
-      "total": 3,
+      "total": 4,
       "resolved": 2,
       "breached": 0,
       "leadership": 0,
-      "am": 3,
+      "am": 4,
       "im": 0
     },
     "May-2026": {
@@ -72,6 +72,33 @@
     }
   },
   "threads": [
+    {
+      "thread_ts": "1780571519.985069",
+      "merchant_name": "Unknown",
+      "who_raised": "Darshna Swetank",
+      "esc_manager": "Darshna Swetank",
+      "created_ist": "2026-06-04 16:41:59",
+      "context": "rithmik.goswami@razorpay.",
+      "status": "Open",
+      "resolution_status": "Unresolved",
+      "ttr_hours": null,
+      "sla_breach": "Open",
+      "esc_month": "Jun-2026",
+      "unblocked": "NO",
+      "mx_confirmed": "NO",
+      "mx_confirm_ts": "",
+      "bl_approval": "NO",
+      "esc_type": "AM Escalation",
+      "im_involved": "NO",
+      "thread_url": "https://razorpay.slack.com/archives/C0A8GNBCPRR/p1780571519985069",
+      "total_replies": 0,
+      "last_activity_ist": "2026-06-04 16:41:59",
+      "last_updated_by": "Darshna Swetank",
+      "resolution_ts": "",
+      "open_days": 1,
+      "week_number": 23,
+      "quarter": "Q2"
+    },
     {
       "thread_ts": "1780477447.194609",
       "merchant_name": "Fibe Escalation",
