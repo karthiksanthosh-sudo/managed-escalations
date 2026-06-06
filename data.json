@@ -1,33 +1,33 @@
 {
   "meta": {
-    "generated_at_ist": "2026-06-06 13:22:42",
-    "generated_at_unix": 1780732362,
-    "total_threads": 164,
+    "generated_at_ist": "2026-06-06 15:41:03",
+    "generated_at_unix": 1780740663,
+    "total_threads": 165,
     "channel_id": "C0A8GNBCPRR"
   },
   "kpis": {
-    "total": 164,
-    "open": 65,
+    "total": 165,
+    "open": 66,
     "resolved": 99,
     "sla_within": 30,
     "sla_breached": 69,
-    "sla_open": 65,
+    "sla_open": 66,
     "sla_pct": 30.3,
     "leadership_total": 21,
     "leadership_within": 4,
-    "am_total": 143,
+    "am_total": 144,
     "am_within": 26,
     "im_involved": 21,
     "avg_ttr_hours": 92.21,
-    "mx_confirm_pending": 65
+    "mx_confirm_pending": 66
   },
   "by_month": {
     "Jun-2026": {
-      "total": 8,
+      "total": 9,
       "resolved": 3,
       "breached": 0,
       "leadership": 1,
-      "am": 7,
+      "am": 8,
       "im": 0
     },
     "May-2026": {
@@ -72,6 +72,33 @@
     }
   },
   "threads": [
+    {
+      "thread_ts": "1780737516.921849",
+      "merchant_name": "Solomon Capital",
+      "who_raised": "Pranika Dua",
+      "esc_manager": "Pranika Dua",
+      "created_ist": "2026-06-06 14:48:36",
+      "context": "P0 : Transactions failing for Solomon Capital",
+      "status": "Open",
+      "resolution_status": "Unresolved",
+      "ttr_hours": null,
+      "sla_breach": "Open",
+      "esc_month": "Jun-2026",
+      "unblocked": "NO",
+      "mx_confirmed": "NO",
+      "mx_confirm_ts": "",
+      "bl_approval": "NO",
+      "esc_type": "AM Escalation",
+      "im_involved": "NO",
+      "thread_url": "https://razorpay.slack.com/archives/C0A8GNBCPRR/p1780737516921849",
+      "total_replies": 5,
+      "last_activity_ist": "2026-06-06 15:29:22",
+      "last_updated_by": "Pranika Dua",
+      "resolution_ts": "",
+      "open_days": 1,
+      "week_number": 23,
+      "quarter": "Q2"
+    },
     {
       "thread_ts": "1780670611.531279",
       "merchant_name": "WA&lt;&gt;Snitch",
