@@ -1,7 +1,7 @@
 {
   "meta": {
-    "generated_at_ist": "2026-06-07 03:38:26",
-    "generated_at_unix": 1780783706,
+    "generated_at_ist": "2026-06-07 05:40:45",
+    "generated_at_unix": 1780791045,
     "total_threads": 165,
     "channel_id": "C0A8GNBCPRR"
   },
@@ -118,11 +118,11 @@
       "esc_type": "AM Escalation",
       "im_involved": "NO",
       "thread_url": "https://razorpay.slack.com/archives/C0A8GNBCPRR/p1780670611531279",
-      "total_replies": 9,
-      "last_activity_ist": "2026-06-06 10:23:24",
-      "last_updated_by": "Shubham Sharma",
+      "total_replies": 10,
+      "last_activity_ist": "2026-06-06 21:40:01",
+      "last_updated_by": "Rajashree.T",
       "resolution_ts": "",
-      "open_days": 1,
+      "open_days": 2,
       "week_number": 23,
       "quarter": "Q2"
     },
