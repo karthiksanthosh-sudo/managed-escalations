@@ -1,7 +1,7 @@
 {
   "meta": {
-    "generated_at_ist": "2026-06-07 17:23:04",
-    "generated_at_unix": 1780833184,
+    "generated_at_ist": "2026-06-07 19:35:58",
+    "generated_at_unix": 1780841158,
     "total_threads": 165,
     "channel_id": "C0A8GNBCPRR"
   },
@@ -95,7 +95,7 @@
       "last_activity_ist": "2026-06-06 16:39:51",
       "last_updated_by": "Pranika Dua",
       "resolution_ts": "",
-      "open_days": 1,
+      "open_days": 2,
       "week_number": 23,
       "quarter": "Q2"
     },
